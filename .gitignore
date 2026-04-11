@@ -4,5 +4,10 @@ out
 *.log
 .DS_Store
 .env
+
+# Protect private keys but allow config
 *.json
+!package.json
+!package-lock.json
+!tsconfig.json
 !output/patient-index.json
