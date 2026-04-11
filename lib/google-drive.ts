@@ -47,6 +47,32 @@ export async function getFileContent(fileId: string) {
 }
 
 /**
+ * Read binary content from a Google Drive file.
+ */
+export async function getFileBinary(fileId: string) {
+  const drive = await getDriveClient();
+  const response = await drive.files.get(
+    { fileId, alt: "media" },
+    { responseType: "arraybuffer" }
+  );
+
+  return Buffer.from(response.data as ArrayBuffer);
+}
+
+/**
+ * Export a Google Drive file (like a Word doc) as a PDF.
+ */
+export async function exportFileAsPdf(fileId: string) {
+  const drive = await getDriveClient();
+  const response = await drive.files.export(
+    { fileId, mimeType: "application/pdf" },
+    { responseType: "arraybuffer" }
+  );
+
+  return Buffer.from(response.data as ArrayBuffer);
+}
+
+/**
  * Specialized function to find and read the patient-index.json from a folder.
  */
 export async function getPatientIndexFromDrive(folderId: string) {

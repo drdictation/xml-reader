@@ -11,3 +11,4 @@ out
 !package-lock.json
 !tsconfig.json
 !output/patient-index.json
+!output/letters-index.json

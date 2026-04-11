@@ -2,9 +2,10 @@
 
 import fs from "node:fs/promises";
 import path from "node:path";
-import { getFileContent } from "../lib/google-drive";
+import { getFileContent, exportFileAsPdf, getFileBinary } from "../lib/google-drive";
 
 const INDEX_FILE = path.join(process.cwd(), "output", "patient-index.json");
+const LETTERS_INDEX_FILE = path.join(process.cwd(), "output", "letters-index.json");
 
 export type PatientIndexEntry = {
   name: string;
@@ -30,6 +31,22 @@ export async function getPatientIndex(): Promise<PatientIndexEntry[]> {
   }
 }
 
+export type LetterIndexEntry = {
+  fileId: string;
+  fileName: string;
+  mimeType: string;
+};
+
+export async function getLettersIndex(): Promise<Record<string, LetterIndexEntry>> {
+  try {
+    const raw = await fs.readFile(LETTERS_INDEX_FILE, "utf8");
+    return JSON.parse(raw) as Record<string, LetterIndexEntry>;
+  } catch (error) {
+    console.error("Letters index not found. Run: node scripts/build-letters-index.mjs", error);
+    return {};
+  }
+}
+
 export async function readBackupFile(fileId: string) {
   try {
     if (!fileId) {
@@ -43,6 +60,26 @@ export async function readBackupFile(fileId: string) {
     };
   } catch (error) {
     console.error("Error reading file from Drive:", error);
+    throw error;
+  }
+}
+
+export async function getLetterPdf(fileId: string) {
+  try {
+    const pdfBuffer = await exportFileAsPdf(fileId);
+    return pdfBuffer.toString("base64");
+  } catch (error) {
+    console.error("Error exporting letter as PDF:", error);
+    throw error;
+  }
+}
+
+export async function getLetterDownload(fileId: string) {
+  try {
+    const buffer = await getFileBinary(fileId);
+    return buffer.toString("base64");
+  } catch (error) {
+    console.error("Error downloading letter:", error);
     throw error;
   }
 }

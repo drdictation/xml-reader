@@ -9,6 +9,7 @@
     "future-appointments": "node scripts/export-future-appointments.mjs",
     "export-scopes": "node scripts/export-scope-appointments.mjs",
     "build-index": "node scripts/build-patient-index.mjs",
+    "build-letters": "node scripts/build-letters-index.mjs",
     "export-database": "node scripts/export-patient-database.mjs"
   },
   "dependencies": {

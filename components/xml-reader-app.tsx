@@ -10,7 +10,7 @@ import {
   type ParsedRecord,
   type EmbeddedPreview,
 } from "../lib/genie-xml";
-import { getPatientIndex, readBackupFile, type PatientIndexEntry } from "../app/actions";
+import { getPatientIndex, readBackupFile, getLettersIndex, getLetterPdf, getLetterDownload, type PatientIndexEntry, type LetterIndexEntry } from "../app/actions";
 
 const PATIENT_FIELDS = [
   "fullname",
@@ -97,9 +97,11 @@ export function XmlReaderApp() {
   const [patientSearch, setPatientSearch] = useState("");
   const [isLoadingPatient, setIsLoadingPatient] = useState(false);
   const [activePatientFile, setActivePatientFile] = useState<string | null>(null);
+  const [lettersIndex, setLettersIndex] = useState<Record<string, LetterIndexEntry>>({});
 
   useEffect(() => {
     getPatientIndex().then(setPatientIndex);
+    getLettersIndex().then(setLettersIndex);
   }, []);
 
   const filteredPatients = useMemo(() => {
@@ -478,7 +480,7 @@ export function XmlReaderApp() {
                   {activeSection && filteredRecords.length > 0 ? (
                     <div className="records-grid">
                       {filteredRecords.map((record) => (
-                        <RecordCard key={record.id} record={record} sectionKey={activeSection.key} />
+                        <RecordCard key={record.id} record={record} sectionKey={activeSection.key} lettersIndex={lettersIndex} />
                       ))}
                     </div>
                   ) : (
@@ -531,9 +533,60 @@ function InfoCard({ label, value }: { label: string; value?: string }) {
   );
 }
 
-function RecordCard({ record, sectionKey }: { record: ParsedRecord; sectionKey: string }) {
+function RecordCard({ record, sectionKey, lettersIndex }: { record: ParsedRecord; sectionKey: string; lettersIndex: Record<string, LetterIndexEntry> }) {
   const [isOpen, setIsOpen] = useState(record.isFuture === true);
+  const [isLetterPreviewOpen, setIsLetterPreviewOpen] = useState(false);
+  const [letterPdfBase64, setLetterPdfBase64] = useState<string | null>(null);
+  const [isLoadingLetter, setIsLoadingLetter] = useState(false);
+
   const isFutureAppt = record.isFuture === true;
+  const letterEntry = sectionKey === "outgoingletter_list" ? lettersIndex[record.id] : null;
+
+  async function handleViewLetter() {
+    if (isLetterPreviewOpen) {
+      setIsLetterPreviewOpen(false);
+      return;
+    }
+
+    if (letterPdfBase64) {
+      setIsLetterPreviewOpen(true);
+      return;
+    }
+
+    if (!letterEntry) return;
+
+    setIsLoadingLetter(true);
+    try {
+      const base64 = await getLetterPdf(letterEntry.fileId);
+      setLetterPdfBase64(base64);
+      setIsLetterPreviewOpen(true);
+    } catch (error) {
+      console.error("Failed to load letter PDF:", error);
+      alert("Could not load the letter preview. You can still try and download it.");
+    } finally {
+      setIsLoadingLetter(false);
+    }
+  }
+
+  async function handleDownloadLetter() {
+    if (!letterEntry) return;
+    try {
+      const base64 = await getLetterDownload(letterEntry.fileId);
+      const binaryString = window.atob(base64);
+      const bytes = Uint8Array.from(binaryString, (c) => c.charCodeAt(0));
+      const blob = new Blob([bytes], { type: letterEntry.mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = letterEntry.fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Failed to download letter:", error);
+      alert("Failed to download the letter.");
+    }
+  }
+
   const primaryFieldOrder = SECTION_PRIMARY_FIELDS[sectionKey] ?? [];
   const allEntries = Object.entries(record.fields)
     .filter(([key, value]) => value && !isBinaryLikeField(key, value, record.preview))
@@ -583,6 +636,11 @@ function RecordCard({ record, sectionKey }: { record: ParsedRecord; sectionKey: 
                   {toLabel(key)}: {formatFieldValue(key, value)}
                 </span>
               ))}
+              {letterEntry && (
+                <span className="meta-pill" style={{ background: "#E3F2FD", color: "#1976D2", fontWeight: 600 }}>
+                  ✅ Letter Attached
+                </span>
+              )}
             </div>
           ) : null}
         </div>
@@ -590,11 +648,38 @@ function RecordCard({ record, sectionKey }: { record: ParsedRecord; sectionKey: 
           {record.primaryDate ? (
             <div className="record-date-pill">{safeValue(record.primaryDate, undefined, "record_date")}</div>
           ) : null}
-          <button className="button secondary" type="button" onClick={() => setIsOpen((current) => !current)}>
-            {isOpen ? "Hide details" : "Open"}
-          </button>
+          <div style={{ display: "flex", gap: "8px" }}>
+            {letterEntry && (
+              <>
+                <button
+                  className={`button ${isLetterPreviewOpen ? "secondary" : ""}`}
+                  type="button"
+                  onClick={handleViewLetter}
+                  disabled={isLoadingLetter}
+                >
+                  {isLoadingLetter ? "Loading..." : isLetterPreviewOpen ? "Close Letter" : "📄 View Letter"}
+                </button>
+                <button className="button secondary" type="button" onClick={handleDownloadLetter}>
+                  ⬇ Download
+                </button>
+              </>
+            )}
+            <button className="button secondary" type="button" onClick={() => setIsOpen((current) => !current)}>
+              {isOpen ? "Hide details" : "Open"}
+            </button>
+          </div>
         </div>
       </header>
+
+      {isLetterPreviewOpen && letterPdfBase64 && (
+        <div className="content-section" style={{ padding: "0", marginBottom: "16px", border: "1px solid var(--border)", borderRadius: "var(--radius-m)", overflow: "hidden" }}>
+          <iframe
+            src={`data:application/pdf;base64,${letterPdfBase64}`}
+            style={{ width: "100%", height: "600px", border: "none" }}
+            title="Letter Preview"
+          />
+        </div>
+      )}
 
       {isOpen ? (
         <>
