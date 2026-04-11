@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<patient_list>
+   <patient>
+      <creator>Sandra Knaggs</creator>
+      <firstname>Michael</firstname>
+      <surname>Debinski</surname>
+      <dob>1956-04-11</dob>
+      <chartornhs></chartornhs>
+      <addressline1>34 Delbridge Street</addressline1>
+      <suburb>FITZROY NORTH</suburb>
+      <creationdate>2021-06-07</creationdate>
+      <sex>M</sex>
+      <ageinmonths>0</ageinmonths>
+      <pharmbenefitsnum></pharmbenefitsnum>
+      <ah_id_fk>41011</ah_id_fk>
+      <referralsmade>0</referralsmade>
+      <homephone>0412262431</homephone>
+      <preferredpharmemail></preferredpharmemail>
+      <medicarerefnum>2</medicarerefnum>
+      <lastseendate>2026-03-20</lastseendate>
+      <tempaddress>false</tempaddress>
+      <title>Mr</title>
+      <preferredpharmname></preferredpharmname>
+      <accounttype>Private</accounttype>
+      <invaliddvanum>false</invaliddvanum>
+      <referringdoctor>Dr Andrew Osborne</referringdoctor>
+      <id>41011</id>
+      <workphone></workphone>
+      <dvanum></dvanum>
+      <isaccountholder>true</isaccountholder>
+      <age>69</age>
+      <fullname>Mr Michael Debinski</fullname>
+      <medicarenum>3025616031</medicarenum>
+      <deceased>false</deceased>
+      <memo></memo>
+      <lastseenby>Dr Chamara Basnayake</lastseenby>
+      <postcode>3068</postcode>
+      <state>VIC</state>
+      <inactive>false</inactive>
+      <emailaddress>mdebinski@hotmail.com</emailaddress>
+      <referraldate>2026-03-20</referraldate>
+      <referralduration>12</referralduration>
+      <referrerprovidernum>241803DL</referrerprovidernum>
+      <referrer_ab_id_fk>13075</referrer_ab_id_fk>
+      <ethnicity></ethnicity>
+      <wartheatre></wartheatre>
+      <blank></blank>
+      <occupation></occupation>
+      <custom></custom>
+      <usualgp>Dr Andrew Osborne</usualgp>
+      <middlename></middlename>
+      <healthfundname>BUPA Australia</healthfundname>
+      <healthfundnum>55097539</healthfundnum>
+      <studentid></studentid>
+      <faculty></faculty>
+      <feetype></feetype>
+      <countryofbirth></countryofbirth>
+      <language></language>
+      <graduatestatus></graduatestatus>
+      <hccpensionnum></hccpensionnum>
+      <hccexpiry>0000-00-00</hccexpiry>
+      <nokname></nokname>
+      <nokphone></nokphone>
+      <addressline2></addressline2>
+      <maritalstatus></maritalstatus>
+      <mobilephone>0412262431</mobilephone>
+      <externalid></externalid>
+      <medicareexpiry>0000-00-00</medicareexpiry>
+      <usualgp_ab_id_fk>13075</usualgp_ab_id_fk>
+      <urnum></urnum>
+      <knownas></knownas>
+      <country>Australia</country>
+      <preferredpharmmobile></preferredpharmmobile>
+      <referralsource></referralsource>
+      <flatnum></flatnum>
+      <streetnum></streetnum>
+      <sexcode>1</sexcode>
+      <maritalcode>0</maritalcode>
+      <culturecode>9</culturecode>
+      <countrycode></countrycode>
+      <languagecode></languagecode>
+      <daysurgeryreported>false</daysurgeryreported>
+      <numofscript>3</numofscript>
+      <partnerdob>0000-00-00</partnerdob>
+      <usualprovider>Dr Chamara Basnayake</usualprovider>
+      <partnername></partnername>
+      <dod>0000-00-00</dod>
+      <lastopvdate>2026-03-20</lastopvdate>
+      <healthfundupi>0</healthfundupi>
+      <healthfundaliasfamilyname></healthfundaliasfamilyname>
+      <healthfundaliasfirstname></healthfundaliasfirstname>
+      <partneroccupation></partneroccupation>
+      <dontsms>false</dontsms>
+      <lockedfg>false</lockedfg>
+      <lockedby></lockedby>
+      <ctgregistered>false</ctgregistered>
+      <ihi>8003601088619585</ihi>
+      <maidenname></maidenname>
+      <streettype></streettype>
+      <dvadisability></dvadisability>
+      <dvacardcolour></dvacardcolour>
+      <ihistatus>Active</ihistatus>
+      <ihirecordstatus>Verified</ihirecordstatus>
+      <ihiverified>2026-03-20T08:37:22.163</ihiverified>
+      <dobaccuracy>AAA</dobaccuracy>
+      <dodaccuracy></dodaccuracy>
+      <streetdescription></streetdescription>
+      <lastupdated>20260320211231</lastupdated>
+      <lastupdatedby>26</lastupdatedby>
+      <partnerid>0</partnerid>
+      <ptcl_id_fk>5BF1E8B84A441840A8B936D4DC2DA14D</ptcl_id_fk>
+      <uuid>8C568B6CCDBEEC42A1421194679D6924</uuid>
+      <createdat></createdat>
+      <gcs_updatedat>2026-03-20T21:12:31.845Z</gcs_updatedat>
+      <gcs_createdat></gcs_createdat>
+      <mhrdontsendletters>false</mhrdontsendletters>
+   </patient>
+</patient_list>
