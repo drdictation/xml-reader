@@ -202,7 +202,7 @@ export function XmlReaderApp() {
     }
   }
 
-const patientName = data?.patient.fullname || [data?.patient.firstname, data?.patient.surname].filter(Boolean).join(" ") || "Patient record";
+  const patientName = data?.patient.fullname || [data?.patient.firstname, data?.patient.surname].filter(Boolean).join(" ") || "Patient record";
 
   return (
     <main className="page-shell">
@@ -211,7 +211,7 @@ const patientName = data?.patient.fullname || [data?.patient.firstname, data?.pa
           <div className="hero-topline">
             <div>
               <p className="eyebrow">Genie XML Reader</p>
-              <h1>Read Genie backups without changing the data.</h1>
+              <h1>Chamara Old Notes</h1>
             </div>
             <div className="privacy-pill">Local browser parsing only</div>
           </div>
