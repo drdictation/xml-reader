@@ -801,6 +801,8 @@ function LinkedLetterPreviewSection({
     }
   }
 
+  const previewDownloadName = preview && preview.type === "binary" ? preview.fileName || `${record.id}.pdf` : `${record.id}.pdf`;
+
   return (
     <div className="preview-block">
       <p className="label">Linked Letter</p>
@@ -820,7 +822,7 @@ function LinkedLetterPreviewSection({
           <a
             className="button secondary"
             href={previewUrl}
-            download={preview?.fileName || `${record.id}.pdf`}
+            download={previewDownloadName}
           >
             Download PDF
           </a>
