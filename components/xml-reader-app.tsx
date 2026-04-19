@@ -739,6 +739,8 @@ function LinkedLetterPreviewSection({
     return null;
   }
 
+  const letter = linkedLetter;
+
   async function loadPreview() {
     if (isLoading) {
       return;
@@ -753,30 +755,30 @@ function LinkedLetterPreviewSection({
     setError(null);
 
     try {
-      if (linkedLetter.mimeType === "application/pdf") {
-        const base64 = await getLetterDownload(linkedLetter.fileId);
+      if (letter.mimeType === "application/pdf") {
+        const base64 = await getLetterDownload(letter.fileId);
         setPreview({
           type: "binary",
           mimeType: "application/pdf",
           base64,
-          fileName: linkedLetter.fileName,
+          fileName: letter.fileName,
           sourceField: "google_drive_letter",
           displayMode: "pdf",
         });
-      } else if (isWordDocument(linkedLetter)) {
-        const content = await getLetterHtml(linkedLetter.fileId, linkedLetter.fileName);
+      } else if (isWordDocument(letter)) {
+        const content = await getLetterHtml(letter.fileId, letter.fileName);
         setPreview({
           type: "html",
           content,
           sourceField: "google_drive_letter",
         });
       } else {
-        const base64 = await getLetterPdf(linkedLetter.fileId);
+        const base64 = await getLetterPdf(letter.fileId);
         setPreview({
           type: "binary",
           mimeType: "application/pdf",
           base64,
-          fileName: linkedLetter.fileName.replace(/\.[^.]+$/, ".pdf"),
+          fileName: letter.fileName.replace(/\.[^.]+$/, ".pdf"),
           sourceField: "google_drive_letter",
           displayMode: "pdf",
         });
@@ -792,8 +794,8 @@ function LinkedLetterPreviewSection({
 
   async function downloadLetter() {
     try {
-      const base64 = await getLetterDownload(linkedLetter.fileId);
-      downloadBase64File(base64, linkedLetter.mimeType, linkedLetter.fileName);
+      const base64 = await getLetterDownload(letter.fileId);
+      downloadBase64File(base64, letter.mimeType, letter.fileName);
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "Could not download the linked letter.");
     }
@@ -823,7 +825,7 @@ function LinkedLetterPreviewSection({
             Download PDF
           </a>
         ) : null}
-        <span className="file-name">{linkedLetter.fileName}</span>
+        <span className="file-name">{letter.fileName}</span>
       </div>
       {error ? <div className="warning">{error}</div> : null}
       {isPreviewOpen && preview?.type === "html" ? (
