@@ -1,15 +1,12 @@
 "use server";
 
-import { execFile } from "node:child_process";
 import fs from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
-import { promisify } from "node:util";
+import { inflateRawSync } from "node:zlib";
 import { getFileContent, exportFileAsPdf, getFileBinary } from "../lib/google-drive";
 
 const INDEX_FILE = path.join(process.cwd(), "output", "patient-index.json");
 const LETTERS_INDEX_FILE = path.join(process.cwd(), "output", "letters-index.json");
-const execFileAsync = promisify(execFile);
 
 export type PatientIndexEntry = {
   name: string;
@@ -81,7 +78,7 @@ export async function getLetterPdf(fileId: string) {
 export async function getLetterHtml(fileId: string, fileName: string) {
   try {
     const buffer = await getFileBinary(fileId);
-    return await convertWordDocumentToHtml(buffer, fileName);
+    return convertWordDocumentToHtml(buffer, fileName);
   } catch (error) {
     console.error("Error converting letter to HTML:", error);
     throw error;
@@ -98,33 +95,44 @@ export async function getLetterDownload(fileId: string) {
   }
 }
 
-async function convertWordDocumentToHtml(buffer: Buffer, fileName: string) {
-  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "xml-reader-letter-"));
-  const extension = path.extname(fileName).toLowerCase() || ".docx";
-  const inputPath = path.join(tempDir, `letter${extension}`);
-  const outputPath = path.join(tempDir, "letter.html");
-
-  try {
-    await fs.writeFile(inputPath, buffer);
-    await execFileAsync("/usr/bin/textutil", [
-      inputPath,
-      "-convert",
-      "html",
-      "-output",
-      outputPath,
-      "-encoding",
-      "UTF-8",
-      "-noload",
-      "-nostore",
-    ]);
-
-    const html = await fs.readFile(outputPath, "utf8");
-    return injectLetterPreviewStyles(html);
-  } catch (error) {
+function convertWordDocumentToHtml(buffer: Buffer, fileName: string) {
+  const extension = path.extname(fileName).toLowerCase();
+  if (extension && extension !== ".docx") {
     throw new Error("Could not load the letter preview. You can still try and download it.");
-  } finally {
-    await fs.rm(tempDir, { recursive: true, force: true });
   }
+
+  const archive = unzipEntries(buffer);
+  const documentXml = archive.get("word/document.xml");
+
+  if (!documentXml) {
+    throw new Error("Could not load the letter preview. You can still try and download it.");
+  }
+
+  const headerHtml = [...archive.entries()]
+    .filter(([name]) => /^word\/header\d+\.xml$/i.test(name))
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([, xml]) => renderWordXml(xml))
+    .filter(Boolean)
+    .join("");
+
+  const footerHtml = [...archive.entries()]
+    .filter(([name]) => /^word\/footer\d+\.xml$/i.test(name))
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([, xml]) => renderWordXml(xml))
+    .filter(Boolean)
+    .join("");
+
+  const bodyHtml = renderWordXml(documentXml);
+  return injectLetterPreviewStyles(
+    [
+      "<!doctype html>",
+      "<html><head><meta charset=\"utf-8\"><title>Letter Preview</title></head><body>",
+      headerHtml ? `<section class="docx-header">${headerHtml}</section>` : "",
+      `<section class="docx-body">${bodyHtml}</section>`,
+      footerHtml ? `<section class="docx-footer">${footerHtml}</section>` : "",
+      "</body></html>",
+    ].join(""),
+  );
 }
 
 function injectLetterPreviewStyles(html: string) {
@@ -143,8 +151,41 @@ function injectLetterPreviewStyles(html: string) {
         line-height: 1.55;
       }
 
+      .docx-header,
+      .docx-footer {
+        color: #4b5563;
+      }
+
+      .docx-header {
+        padding-bottom: 20px;
+        border-bottom: 1px solid #e5e7eb;
+        margin-bottom: 24px;
+      }
+
+      .docx-footer {
+        padding-top: 20px;
+        border-top: 1px solid #e5e7eb;
+        margin-top: 24px;
+      }
+
       p {
         margin: 0 0 1em;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 0 0 1.25em;
+      }
+
+      td, th {
+        border: 1px solid #d1d5db;
+        padding: 8px 10px;
+        vertical-align: top;
+      }
+
+      .docx-blank {
+        min-height: 1em;
       }
 
       @media (max-width: 720px) {
@@ -160,6 +201,174 @@ function injectLetterPreviewStyles(html: string) {
   }
 
   return `${styles}${html}`;
+}
+
+function unzipEntries(buffer: Buffer) {
+  const endOfCentralDirectoryOffset = findEndOfCentralDirectory(buffer);
+  if (endOfCentralDirectoryOffset === -1) {
+    throw new Error("Invalid DOCX archive.");
+  }
+
+  const entryCount = buffer.readUInt16LE(endOfCentralDirectoryOffset + 10);
+  const centralDirectoryOffset = buffer.readUInt32LE(endOfCentralDirectoryOffset + 16);
+  const entries = new Map<string, string>();
+  let cursor = centralDirectoryOffset;
+
+  for (let index = 0; index < entryCount; index += 1) {
+    if (cursor + 46 > buffer.length || buffer.readUInt32LE(cursor) !== 0x02014b50) {
+      throw new Error("Invalid ZIP central directory.");
+    }
+
+    const compressionMethod = buffer.readUInt16LE(cursor + 10);
+    const compressedSize = buffer.readUInt32LE(cursor + 20);
+    const fileNameLength = buffer.readUInt16LE(cursor + 28);
+    const extraFieldLength = buffer.readUInt16LE(cursor + 30);
+    const fileCommentLength = buffer.readUInt16LE(cursor + 32);
+    const localHeaderOffset = buffer.readUInt32LE(cursor + 42);
+    const fileName = buffer.toString("utf8", cursor + 46, cursor + 46 + fileNameLength);
+
+    if (localHeaderOffset + 30 > buffer.length || buffer.readUInt32LE(localHeaderOffset) !== 0x04034b50) {
+      throw new Error("Invalid ZIP local header.");
+    }
+
+    const localNameLength = buffer.readUInt16LE(localHeaderOffset + 26);
+    const localExtraLength = buffer.readUInt16LE(localHeaderOffset + 28);
+    const fileDataOffset = localHeaderOffset + 30 + localNameLength + localExtraLength;
+    const compressedData = buffer.subarray(fileDataOffset, fileDataOffset + compressedSize);
+    const fileData =
+      compressionMethod === 0
+        ? compressedData
+        : compressionMethod === 8
+          ? inflateRawSync(compressedData)
+          : undefined;
+
+    if (!fileData) {
+      throw new Error(`Unsupported DOCX compression method: ${compressionMethod}`);
+    }
+
+    entries.set(fileName, fileData.toString("utf8"));
+    cursor += 46 + fileNameLength + extraFieldLength + fileCommentLength;
+  }
+
+  return entries;
+}
+
+function findEndOfCentralDirectory(buffer: Buffer) {
+  if (buffer.length < 22) {
+    return -1;
+  }
+
+  for (let offset = buffer.length - 22; offset >= Math.max(0, buffer.length - 65557); offset -= 1) {
+    if (buffer.readUInt32LE(offset) === 0x06054b50) {
+      return offset;
+    }
+  }
+
+  return -1;
+}
+
+function renderWordXml(xml: string) {
+  const bodyMatch = xml.match(/<w:body\b[^>]*>([\s\S]*?)<\/w:body>/i);
+  const source = bodyMatch ? bodyMatch[1] : xml;
+  const blockPattern = /<w:(p|tbl)\b[\s\S]*?<\/w:\1>/gi;
+  const blocks = source.match(blockPattern) ?? [];
+
+  return blocks
+    .map((block) => {
+      if (block.startsWith("<w:tbl")) {
+        return renderTable(block);
+      }
+
+      return renderParagraph(block);
+    })
+    .filter(Boolean)
+    .join("");
+}
+
+function renderTable(tableXml: string) {
+  const rows = [...tableXml.matchAll(/<w:tr\b[\s\S]*?<\/w:tr>/gi)]
+    .map((rowMatch) => {
+      const cells = [...rowMatch[0].matchAll(/<w:tc\b[\s\S]*?<\/w:tc>/gi)]
+        .map((cellMatch) => `<td>${renderCell(cellMatch[0])}</td>`)
+        .join("");
+
+      return cells ? `<tr>${cells}</tr>` : "";
+    })
+    .filter(Boolean)
+    .join("");
+
+  return rows ? `<table><tbody>${rows}</tbody></table>` : "";
+}
+
+function renderCell(cellXml: string) {
+  const paragraphs = [...cellXml.matchAll(/<w:p\b[\s\S]*?<\/w:p>/gi)]
+    .map((paragraphMatch) => renderParagraph(paragraphMatch[0]))
+    .filter(Boolean)
+    .join("");
+
+  return paragraphs || '<p class="docx-blank">&nbsp;</p>';
+}
+
+function renderParagraph(paragraphXml: string) {
+  const bulletPrefix = /<w:numPr\b/i.test(paragraphXml) ? "• " : "";
+  const tokens = [...paragraphXml.matchAll(/<w:t\b[^>]*>[\s\S]*?<\/w:t>|<w:tab\/>|<w:br\b[^>]*\/>|<w:cr\/>/gi)].map(
+    (match) => {
+      const token = match[0];
+      if (/^<w:tab\/>$/i.test(token)) {
+        return "\t";
+      }
+
+      if (/^<w:(br|cr)\b/i.test(token)) {
+        return "\n";
+      }
+
+      const textMatch = token.match(/<w:t\b[^>]*>([\s\S]*?)<\/w:t>/i);
+      return textMatch ? decodeXmlEntities(textMatch[1]) : "";
+    },
+  );
+
+  const content = `${bulletPrefix}${tokens.join("")}`.trim();
+  if (!content) {
+    return '<p class="docx-blank">&nbsp;</p>';
+  }
+
+  return `<p>${escapeHtml(content).replace(/\n/g, "<br>")}</p>`;
+}
+
+function decodeXmlEntities(value: string) {
+  return value.replace(/&(#x?[0-9a-f]+|amp|lt|gt|quot|apos);/gi, (entity, code: string) => {
+    switch (code.toLowerCase()) {
+      case "amp":
+        return "&";
+      case "lt":
+        return "<";
+      case "gt":
+        return ">";
+      case "quot":
+        return '"';
+      case "apos":
+        return "'";
+      default:
+        if (code.startsWith("#x")) {
+          return String.fromCodePoint(Number.parseInt(code.slice(2), 16));
+        }
+
+        if (code.startsWith("#")) {
+          return String.fromCodePoint(Number.parseInt(code.slice(1), 10));
+        }
+
+        return entity;
+    }
+  });
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 export async function login(password: string) {

@@ -1,8 +1,8 @@
-#!/bin/bash
+#!/bin/bash 
 echo "Starting Letter Generator App..."
 cd "$(dirname "$0")/letter_app"
 
-# Setup virtual environment if missing
+# Setup virtual environment if missingk
 if [ ! -d "venv" ]; then
     echo "Creating python environment..."
     python3 -m venv venv
