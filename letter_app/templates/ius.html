@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IUS Referral | Letter Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div>
+                <h1>IUS Referral Form <span>Sticker Fill</span></h1>
+                <nav class="mode-nav" aria-label="App sections">
+                    <a href="/" class="mode-link">Letters</a>
+                    <a href="/pathology" class="mode-link">Pathology</a>
+                    <a href="/radiology" class="mode-link">Radiology</a>
+                    <a href="/ius" class="mode-link is-active">IUS</a>
+                </nav>
+            </div>
+            <div id="loading-indicator" class="loading hidden">Loading Database...</div>
+        </header>
+
+        <main class="main-content">
+            <div class="left-panel">
+                <div class="card">
+                    <h2>Patient Sticker</h2>
+                    <p class="subtitle">This will place a white sticker-style block over the patient section, then print the patient details on top.</p>
+
+                    <div class="form-group">
+                        <label for="ius-patient-select">Patient Lookup</label>
+                        <select id="ius-patient-select" placeholder="Search patient by name..."></select>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="ius-date">Date</label>
+                            <input id="ius-date" class="text-input" type="date">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ius-urgent">Urgent Referral</label>
+                            <select id="ius-urgent" class="text-input">
+                                <option value="">Leave Unticked</option>
+                                <option value="yes">Yes</option>
+                                <option value="no">No</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group field-span">
+                            <label for="ius-name">Name</label>
+                            <input id="ius-name" class="text-input" type="text" placeholder="Patient full name">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ius-dob">Date of Birth</label>
+                            <input id="ius-dob" class="text-input" type="date">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ius-urn">URN</label>
+                            <input id="ius-urn" class="text-input" type="text" placeholder="Optional">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ius-medicare">Medicare No.</label>
+                            <input id="ius-medicare" class="text-input" type="text" placeholder="Optional">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ius-phone">Phone</label>
+                            <input id="ius-phone" class="text-input" type="text" placeholder="Optional">
+                        </div>
+
+                        <div class="form-group field-span">
+                            <label for="ius-address">Address</label>
+                            <textarea id="ius-address" class="form-textarea compact-textarea" placeholder="Street, suburb, postcode"></textarea>
+                        </div>
+
+                        <div class="form-group field-span">
+                            <label for="ius-email">Email</label>
+                            <input id="ius-email" class="text-input" type="email" placeholder="Optional">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <div class="card editor-card">
+                    <h2>Referral Details</h2>
+                    <div class="checkbox-grid">
+                        <label class="check-option"><input id="reason-symptoms" type="checkbox"> Investigation of GI Symptoms</label>
+                        <label class="check-option"><input id="reason-ibd" type="checkbox"> Assessment of known IBD (UC/CD)</label>
+                        <label class="check-option"><input id="reason-incomplete-colonoscopy" type="checkbox"> Incomplete colonoscopy</label>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 18px;">
+                        <label for="ius-medical-history">Medical History</label>
+                        <textarea id="ius-medical-history" class="form-textarea" placeholder="Relevant symptoms, duration, prior imaging, colonoscopy history, medications, and other notes..."></textarea>
+                    </div>
+                </div>
+
+                <div class="card editor-card" style="margin-top: 20px; flex: 0 0 auto;">
+                    <h2>Additional Information</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="ius-abnormal-markers">Inflammatory Markers</label>
+                            <input id="ius-abnormal-markers" class="text-input" type="text" placeholder="e.g. CRP 28, ESR 42">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ius-abnormal-markers-result">Date / Result</label>
+                            <input id="ius-abnormal-markers-result" class="text-input" type="text" placeholder="e.g. 17/04/2026">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ius-calprotectin">Faecal Calprotectin</label>
+                            <input id="ius-calprotectin" class="text-input" type="text" placeholder="e.g. 320 ug/g">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ius-calprotectin-result">Date / Result</label>
+                            <input id="ius-calprotectin-result" class="text-input" type="text" placeholder="e.g. 12/04/2026">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ius-pregnant">Pregnant?</label>
+                            <select id="ius-pregnant" class="text-input">
+                                <option value="">Leave Unticked</option>
+                                <option value="yes">Yes</option>
+                                <option value="no">No</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ius-gestation-weeks">Weeks Gestation</label>
+                            <input id="ius-gestation-weeks" class="text-input" type="text" placeholder="If pregnant">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="app-footer pathology-footer">
+            <div id="ius-status" class="form-status hidden"></div>
+            <button id="generate-ius-btn" class="btn-primary" disabled>Generate IUS PDF</button>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+    <script src="/static/js/ius.js"></script>
+</body>
+</html>

@@ -4,6 +4,22 @@ Read-only browser viewer for Genie `patient_summary` XML exports.
 
 ## Local development
 
+This project expects Node `22.x`.
+
+If you use `nvm`:
+
+```bash
+nvm install
+nvm use
+```
+
+Or install Node 22 from [nodejs.org](https://nodejs.org/) and confirm:
+
+```bash
+node -v
+npm -v
+```
+
 ```bash
 npm install
 npm run dev

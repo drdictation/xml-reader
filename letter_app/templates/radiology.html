@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radiology Request | Letter Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div>
+                <h1>Radiology Requests <span>St Vincent's Form</span></h1>
+                <nav class="mode-nav" aria-label="App sections">
+                    <a href="/" class="mode-link">Letters</a>
+                    <a href="/pathology" class="mode-link">Pathology</a>
+                    <a href="/radiology" class="mode-link is-active">Radiology</a>
+                    <a href="/ius" class="mode-link">IUS</a>
+                </nav>
+            </div>
+            <div id="loading-indicator" class="loading hidden">Loading Database...</div>
+        </header>
+
+        <main class="main-content">
+            <div class="left-panel">
+                <div class="card">
+                    <h2>Patient Details</h2>
+                    <p class="subtitle">Search a patient to preload details, then edit anything manually before generating the form.</p>
+
+                    <div class="form-group">
+                        <label for="radiology-patient-select">Patient Lookup</label>
+                        <select id="radiology-patient-select" placeholder="Search patient by name..."></select>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group field-span">
+                            <label for="rad-name">Name</label>
+                            <input id="rad-name" class="text-input" type="text" placeholder="Patient full name">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="rad-dob">Date of Birth</label>
+                            <input id="rad-dob" class="text-input" type="date">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="rad-medicare">Medicare No.</label>
+                            <input id="rad-medicare" class="text-input" type="text" placeholder="Optional">
+                        </div>
+
+                        <div class="form-group field-span">
+                            <label for="rad-address">Address</label>
+                            <textarea id="rad-address" class="form-textarea compact-textarea" placeholder="Street, suburb, postcode"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="rad-phone">Telephone</label>
+                            <input id="rad-phone" class="text-input" type="text" placeholder="Home or mobile">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="rad-date">Request Date</label>
+                            <input id="rad-date" class="text-input" type="date">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="rad-category">Patient Category</label>
+                            <select id="rad-category" class="text-input">
+                                <option value="private">Private</option>
+                                <option value="wc">W/C</option>
+                                <option value="pension">Pension</option>
+                                <option value="vet_aff">Vet/Aff.</option>
+                                <option value="tac">TAC</option>
+                                <option value="">Leave Unticked</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <div class="card editor-card">
+                    <h2>Request For</h2>
+                    <p class="subtitle">Enter the imaging or procedure requested. This fills the large left request box on the form.</p>
+                    <textarea id="rad-request-for" class="form-textarea" placeholder="Examples:
+CT abdomen and pelvis with contrast
+MRI enterography
+Ultrasound abdomen"></textarea>
+                </div>
+
+                <div class="card editor-card" style="margin-top: 20px; flex: 0 0 auto;">
+                    <h2>Clinical Details</h2>
+                    <p class="subtitle">Clinical indication, symptoms, and relevant history for the radiology team.</p>
+                    <textarea id="rad-clinical-details" class="form-textarea notes-textarea" placeholder="Reason for scan, provisional diagnosis, symptoms, and relevant history..."></textarea>
+                </div>
+            </div>
+        </main>
+
+        <footer class="app-footer pathology-footer">
+            <div id="radiology-status" class="form-status hidden"></div>
+            <button id="generate-radiology-btn" class="btn-primary" disabled>Generate Radiology PDF</button>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+    <script src="/static/js/radiology.js"></script>
+</body>
+</html>

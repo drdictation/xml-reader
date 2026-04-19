@@ -1,11 +1,15 @@
 "use server";
 
+import { execFile } from "node:child_process";
 import fs from "node:fs/promises";
+import os from "node:os";
 import path from "node:path";
+import { promisify } from "node:util";
 import { getFileContent, exportFileAsPdf, getFileBinary } from "../lib/google-drive";
 
 const INDEX_FILE = path.join(process.cwd(), "output", "patient-index.json");
 const LETTERS_INDEX_FILE = path.join(process.cwd(), "output", "letters-index.json");
+const execFileAsync = promisify(execFile);
 
 export type PatientIndexEntry = {
   name: string;
@@ -74,6 +78,16 @@ export async function getLetterPdf(fileId: string) {
   }
 }
 
+export async function getLetterHtml(fileId: string, fileName: string) {
+  try {
+    const buffer = await getFileBinary(fileId);
+    return await convertWordDocumentToHtml(buffer, fileName);
+  } catch (error) {
+    console.error("Error converting letter to HTML:", error);
+    throw error;
+  }
+}
+
 export async function getLetterDownload(fileId: string) {
   try {
     const buffer = await getFileBinary(fileId);
@@ -82,6 +96,70 @@ export async function getLetterDownload(fileId: string) {
     console.error("Error downloading letter:", error);
     throw error;
   }
+}
+
+async function convertWordDocumentToHtml(buffer: Buffer, fileName: string) {
+  const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "xml-reader-letter-"));
+  const extension = path.extname(fileName).toLowerCase() || ".docx";
+  const inputPath = path.join(tempDir, `letter${extension}`);
+  const outputPath = path.join(tempDir, "letter.html");
+
+  try {
+    await fs.writeFile(inputPath, buffer);
+    await execFileAsync("/usr/bin/textutil", [
+      inputPath,
+      "-convert",
+      "html",
+      "-output",
+      outputPath,
+      "-encoding",
+      "UTF-8",
+      "-noload",
+      "-nostore",
+    ]);
+
+    const html = await fs.readFile(outputPath, "utf8");
+    return injectLetterPreviewStyles(html);
+  } catch (error) {
+    throw new Error("Could not load the letter preview. You can still try and download it.");
+  } finally {
+    await fs.rm(tempDir, { recursive: true, force: true });
+  }
+}
+
+function injectLetterPreviewStyles(html: string) {
+  const styles = `
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: #ffffff;
+      }
+
+      body {
+        padding: 32px;
+        color: #1f2937;
+        font-family: Georgia, "Times New Roman", serif;
+        line-height: 1.55;
+      }
+
+      p {
+        margin: 0 0 1em;
+      }
+
+      @media (max-width: 720px) {
+        body {
+          padding: 18px;
+        }
+      }
+    </style>
+  `;
+
+  if (html.includes("</head>")) {
+    return html.replace("</head>", `${styles}</head>`);
+  }
+
+  return `${styles}${html}`;
 }
 
 export async function login(password: string) {

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Letter Generator | Consult Mode</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div>
+                <h1>Letter Generator <span>Consult Mode</span></h1>
+                <nav class="mode-nav" aria-label="App sections">
+                    <a href="/" class="mode-link is-active">Letters</a>
+                    <a href="/pathology" class="mode-link">Pathology</a>
+                    <a href="/radiology" class="mode-link">Radiology</a>
+                    <a href="/ius" class="mode-link">IUS</a>
+                </nav>
+            </div>
+            <div id="loading-indicator" class="loading hidden">Loading Database...</div>
+        </header>
+
+        <main class="main-content">
+            <div class="left-panel">
+                <div class="card">
+                    <h2>Letter Details</h2>
+                    
+                    <div class="form-group">
+                        <label for="template-select">Letter Template</label>
+                        <select id="template-select" placeholder="Select a template..."></select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="patient-select">Patient</label>
+                        <select id="patient-select" placeholder="Search patient by name..."></select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="referrer-select">Referring Doctor</label>
+                        <select id="referrer-select" placeholder="Search referring doctor..."></select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cc-select">CC Doctors (Optional)</label>
+                        <select id="cc-select" placeholder="Search and add CC doctors..." multiple></select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <div class="card editor-card">
+                    <h2>Letter Body</h2>
+                    <p class="subtitle">Paste or type your letter below. Formatting (bold, underline, bullet points) is preserved in the PDF.</p>
+                    <div class="toolbar">
+                        <button type="button" onclick="fmt('bold')" title="Bold"><b>B</b></button>
+                        <button type="button" onclick="fmt('italic')" title="Italic"><i>I</i></button>
+                        <button type="button" onclick="fmt('underline')" title="Underline"><u>U</u></button>
+                        <button type="button" onclick="fmt('insertUnorderedList')" title="Bullet List">&#8226; List</button>
+                        <button type="button" onclick="fmt('insertOrderedList')" title="Numbered List">1. List</button>
+                    </div>
+                    <div id="body-text" contenteditable="true" class="rich-editor" data-placeholder="Type or paste consultation notes here..."></div>
+                </div>
+
+                <div class="card editor-card" style="margin-top: 20px; flex: 0 0 auto;">
+                    <h2>Pathology Results <span class="optional-badge">Optional</span></h2>
+                    <p class="subtitle">Paste investigation results here — they will appear below the signature in the PDF.</p>
+                    <div class="toolbar">
+                        <button type="button" onclick="fmtPathology('bold')" title="Bold"><b>B</b></button>
+                        <button type="button" onclick="fmtPathology('insertUnorderedList')" title="Bullet List">&#8226; List</button>
+                        <button type="button" onclick="fmtPathology('insertOrderedList')" title="Numbered List">1. List</button>
+                    </div>
+                    <div id="pathology-text" contenteditable="true" class="rich-editor pathology-editor" data-placeholder="Paste pathology, lab results, or investigation findings here..."></div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="app-footer">
+            <button id="generate-btn" class="btn-primary" disabled>Generate & Open Outlook</button>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

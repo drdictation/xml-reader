@@ -10,7 +10,16 @@ import {
   type ParsedRecord,
   type EmbeddedPreview,
 } from "../lib/genie-xml";
-import { getPatientIndex, readBackupFile, getLettersIndex, getLetterPdf, getLetterDownload, type PatientIndexEntry, type LetterIndexEntry } from "../app/actions";
+import {
+  getLetterDownload,
+  getLetterHtml,
+  getLetterPdf,
+  getLettersIndex,
+  getPatientIndex,
+  readBackupFile,
+  type LetterIndexEntry,
+  type PatientIndexEntry,
+} from "../app/actions";
 
 const PATIENT_FIELDS = [
   "fullname",
@@ -94,10 +103,10 @@ export function XmlReaderApp() {
   const [query, setQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [patientIndex, setPatientIndex] = useState<PatientIndexEntry[]>([]);
+  const [lettersIndex, setLettersIndex] = useState<Record<string, LetterIndexEntry>>({});
   const [patientSearch, setPatientSearch] = useState("");
   const [isLoadingPatient, setIsLoadingPatient] = useState(false);
   const [activePatientFile, setActivePatientFile] = useState<string | null>(null);
-  const [lettersIndex, setLettersIndex] = useState<Record<string, LetterIndexEntry>>({});
 
   useEffect(() => {
     getPatientIndex().then(setPatientIndex);
@@ -213,7 +222,7 @@ export function XmlReaderApp() {
           <div className="hero-topline">
             <div>
               <p className="eyebrow">Genie XML Reader</p>
-              <h1>Chamara Old Notes</h1>
+              <h1>Chamara Old CMG Notes</h1>
             </div>
             <div className="privacy-pill">Local browser parsing only</div>
           </div>
@@ -477,10 +486,15 @@ export function XmlReaderApp() {
                 </div>
 
                 <div className="content-section">
-                  {activeSection && filteredRecords.length > 0 ? (
+                      {activeSection && filteredRecords.length > 0 ? (
                     <div className="records-grid">
                       {filteredRecords.map((record) => (
-                        <RecordCard key={record.id} record={record} sectionKey={activeSection.key} lettersIndex={lettersIndex} />
+                        <RecordCard
+                          key={record.id}
+                          record={record}
+                          sectionKey={activeSection.key}
+                          lettersIndex={lettersIndex}
+                        />
                       ))}
                     </div>
                   ) : (
@@ -533,60 +547,17 @@ function InfoCard({ label, value }: { label: string; value?: string }) {
   );
 }
 
-function RecordCard({ record, sectionKey, lettersIndex }: { record: ParsedRecord; sectionKey: string; lettersIndex: Record<string, LetterIndexEntry> }) {
+function RecordCard({
+  record,
+  sectionKey,
+  lettersIndex,
+}: {
+  record: ParsedRecord;
+  sectionKey: string;
+  lettersIndex: Record<string, LetterIndexEntry>;
+}) {
   const [isOpen, setIsOpen] = useState(record.isFuture === true);
-  const [isLetterPreviewOpen, setIsLetterPreviewOpen] = useState(false);
-  const [letterPdfBase64, setLetterPdfBase64] = useState<string | null>(null);
-  const [isLoadingLetter, setIsLoadingLetter] = useState(false);
-
   const isFutureAppt = record.isFuture === true;
-  const letterEntry = sectionKey === "outgoingletter_list" ? lettersIndex[record.id] : null;
-
-  async function handleViewLetter() {
-    if (isLetterPreviewOpen) {
-      setIsLetterPreviewOpen(false);
-      return;
-    }
-
-    if (letterPdfBase64) {
-      setIsLetterPreviewOpen(true);
-      return;
-    }
-
-    if (!letterEntry) return;
-
-    setIsLoadingLetter(true);
-    try {
-      const base64 = await getLetterPdf(letterEntry.fileId);
-      setLetterPdfBase64(base64);
-      setIsLetterPreviewOpen(true);
-    } catch (error) {
-      console.error("Failed to load letter PDF:", error);
-      alert("Could not load the letter preview. You can still try and download it.");
-    } finally {
-      setIsLoadingLetter(false);
-    }
-  }
-
-  async function handleDownloadLetter() {
-    if (!letterEntry) return;
-    try {
-      const base64 = await getLetterDownload(letterEntry.fileId);
-      const binaryString = window.atob(base64);
-      const bytes = Uint8Array.from(binaryString, (c) => c.charCodeAt(0));
-      const blob = new Blob([bytes], { type: letterEntry.mimeType });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = letterEntry.fileName;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error("Failed to download letter:", error);
-      alert("Failed to download the letter.");
-    }
-  }
-
   const primaryFieldOrder = SECTION_PRIMARY_FIELDS[sectionKey] ?? [];
   const allEntries = Object.entries(record.fields)
     .filter(([key, value]) => value && !isBinaryLikeField(key, value, record.preview))
@@ -636,11 +607,6 @@ function RecordCard({ record, sectionKey, lettersIndex }: { record: ParsedRecord
                   {toLabel(key)}: {formatFieldValue(key, value)}
                 </span>
               ))}
-              {letterEntry && (
-                <span className="meta-pill" style={{ background: "#E3F2FD", color: "#1976D2", fontWeight: 600 }}>
-                  ✅ Letter Attached
-                </span>
-              )}
             </div>
           ) : null}
         </div>
@@ -648,38 +614,11 @@ function RecordCard({ record, sectionKey, lettersIndex }: { record: ParsedRecord
           {record.primaryDate ? (
             <div className="record-date-pill">{safeValue(record.primaryDate, undefined, "record_date")}</div>
           ) : null}
-          <div style={{ display: "flex", gap: "8px" }}>
-            {letterEntry && (
-              <>
-                <button
-                  className={`button ${isLetterPreviewOpen ? "secondary" : ""}`}
-                  type="button"
-                  onClick={handleViewLetter}
-                  disabled={isLoadingLetter}
-                >
-                  {isLoadingLetter ? "Loading..." : isLetterPreviewOpen ? "Close Letter" : "📄 View Letter"}
-                </button>
-                <button className="button secondary" type="button" onClick={handleDownloadLetter}>
-                  ⬇ Download
-                </button>
-              </>
-            )}
-            <button className="button secondary" type="button" onClick={() => setIsOpen((current) => !current)}>
-              {isOpen ? "Hide details" : "Open"}
-            </button>
-          </div>
+          <button className="button secondary" type="button" onClick={() => setIsOpen((current) => !current)}>
+            {isOpen ? "Hide details" : "Open"}
+          </button>
         </div>
       </header>
-
-      {isLetterPreviewOpen && letterPdfBase64 && (
-        <div className="content-section" style={{ padding: "0", marginBottom: "16px", border: "1px solid var(--border)", borderRadius: "var(--radius-m)", overflow: "hidden" }}>
-          <iframe
-            src={`data:application/pdf;base64,${letterPdfBase64}`}
-            style={{ width: "100%", height: "600px", border: "none" }}
-            title="Letter Preview"
-          />
-        </div>
-      )}
 
       {isOpen ? (
         <>
@@ -701,6 +640,9 @@ function RecordCard({ record, sectionKey, lettersIndex }: { record: ParsedRecord
           ) : null}
 
           {record.preview ? <EmbeddedPreviewSection record={record} /> : null}
+          {sectionKey === "outgoingletter_list" ? (
+            <LinkedLetterPreviewSection record={record} lettersIndex={lettersIndex} />
+          ) : null}
 
           {technicalEntries.length > 0 ? (
             <details className="details-block">
@@ -773,6 +715,122 @@ function EmbeddedPreviewSection({ record }: { record: ParsedRecord }) {
             </div>
           ) : null}
         </>
+      ) : null}
+    </div>
+  );
+}
+
+function LinkedLetterPreviewSection({
+  record,
+  lettersIndex,
+}: {
+  record: ParsedRecord;
+  lettersIndex: Record<string, LetterIndexEntry>;
+}) {
+  const linkedLetterId = findLinkedLetterId(record.fields, lettersIndex);
+  const linkedLetter = linkedLetterId ? lettersIndex[linkedLetterId] : undefined;
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<EmbeddedPreview>();
+  const previewUrl = useObjectUrl(isPreviewOpen ? preview : undefined);
+
+  if (!linkedLetter || record.preview) {
+    return null;
+  }
+
+  async function loadPreview() {
+    if (isLoading) {
+      return;
+    }
+
+    if (preview) {
+      setIsPreviewOpen((current) => !current);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      if (linkedLetter.mimeType === "application/pdf") {
+        const base64 = await getLetterDownload(linkedLetter.fileId);
+        setPreview({
+          type: "binary",
+          mimeType: "application/pdf",
+          base64,
+          fileName: linkedLetter.fileName,
+          sourceField: "google_drive_letter",
+          displayMode: "pdf",
+        });
+      } else if (isWordDocument(linkedLetter)) {
+        const content = await getLetterHtml(linkedLetter.fileId, linkedLetter.fileName);
+        setPreview({
+          type: "html",
+          content,
+          sourceField: "google_drive_letter",
+        });
+      } else {
+        const base64 = await getLetterPdf(linkedLetter.fileId);
+        setPreview({
+          type: "binary",
+          mimeType: "application/pdf",
+          base64,
+          fileName: linkedLetter.fileName.replace(/\.[^.]+$/, ".pdf"),
+          sourceField: "google_drive_letter",
+          displayMode: "pdf",
+        });
+      }
+
+      setIsPreviewOpen(true);
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : "Could not load linked letter preview.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function downloadLetter() {
+    try {
+      const base64 = await getLetterDownload(linkedLetter.fileId);
+      downloadBase64File(base64, linkedLetter.mimeType, linkedLetter.fileName);
+    } catch (caughtError) {
+      setError(caughtError instanceof Error ? caughtError.message : "Could not download the linked letter.");
+    }
+  }
+
+  return (
+    <div className="preview-block">
+      <p className="label">Linked Letter</p>
+      <div className="preview-actions">
+        <button className="button secondary" type="button" onClick={loadPreview} disabled={isLoading}>
+          {isLoading ? "Loading..." : isPreviewOpen ? "Hide letter" : "View letter"}
+        </button>
+        <button className="button secondary" type="button" onClick={downloadLetter}>
+          Download original
+        </button>
+        {previewUrl ? (
+          <a className="button secondary" href={previewUrl} target="_blank" rel="noreferrer">
+            Open PDF
+          </a>
+        ) : null}
+        {previewUrl ? (
+          <a
+            className="button secondary"
+            href={previewUrl}
+            download={preview?.fileName || `${record.id}.pdf`}
+          >
+            Download PDF
+          </a>
+        ) : null}
+        <span className="file-name">{linkedLetter.fileName}</span>
+      </div>
+      {error ? <div className="warning">{error}</div> : null}
+      {isPreviewOpen && preview?.type === "html" ? (
+        <iframe className="preview-frame" srcDoc={preview.content} title={record.title} />
+      ) : null}
+      {isPreviewOpen && previewUrl ? (
+        <iframe className="preview-frame" src={previewUrl} title={record.title} />
       ) : null}
     </div>
   );
@@ -854,6 +912,71 @@ function getFileExtension(mimeType: string) {
   }
 
   return "bin";
+}
+
+function isWordDocument(letter: LetterIndexEntry) {
+  return (
+    letter.mimeType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+    letter.mimeType === "application/msword" ||
+    /\.docx?$/i.test(letter.fileName)
+  );
+}
+
+function downloadBase64File(base64: string, mimeType: string, fileName: string) {
+  const binaryString = window.atob(base64);
+  const bytes = Uint8Array.from(binaryString, (character) => character.charCodeAt(0));
+  const blob = new Blob([bytes], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+
+  link.href = url;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function findLinkedLetterId(
+  fields: Record<string, string>,
+  lettersIndex: Record<string, LetterIndexEntry>,
+): string | undefined {
+  const preferredKeys = [
+    "letterid",
+    "letter_id",
+    "outgoingletterid",
+    "outgoingletter_id",
+    "documentid",
+    "document_id",
+    "graphicid",
+    "graphic_id",
+    "id",
+  ];
+
+  for (const key of preferredKeys) {
+    const value = fields[key]?.trim();
+    if (value && lettersIndex[value]) {
+      return value;
+    }
+  }
+
+  for (const value of Object.values(fields)) {
+    if (!value) {
+      continue;
+    }
+
+    const matches = value.match(/\b\d{4,}\b/g);
+    if (!matches) {
+      continue;
+    }
+
+    const matchedId = matches.find((candidate) => lettersIndex[candidate]);
+    if (matchedId) {
+      return matchedId;
+    }
+  }
+
+  return undefined;
 }
 
 function isNarrativeField(fieldName: string) {
