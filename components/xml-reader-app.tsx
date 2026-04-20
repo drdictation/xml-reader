@@ -95,6 +95,13 @@ const SECTION_PRIMARY_FIELDS: Record<string, string[]> = {
 const TECHNICAL_FIELD_PATTERN =
   /(^id$|uuid|_id_fk$|^pt_id_fk$|^ab_id_fk$|^apt_id_fk$|^prfusr_id_fk$|^graphic_id_fk$|^pathname$|^createdat$|^gcs_|^lastupdated$|^lastupdatedby$|^externalid$|^sync$|^archived$|^deleted$)/i;
 
+const SECTION_KEYS_AT_BOTTOM = [
+  "addressbook_list",
+  "patientclinical_list",
+  "hiaudit_list",
+  "interestedparty_list",
+];
+
 export function XmlReaderApp() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -141,6 +148,23 @@ export function XmlReaderApp() {
     }
   }
 
+  const orderedSections = useMemo(() => {
+    if (!data) {
+      return [];
+    }
+
+    return [...data.sections].sort((left, right) => {
+      const leftIndex = SECTION_KEYS_AT_BOTTOM.indexOf(left.key);
+      const rightIndex = SECTION_KEYS_AT_BOTTOM.indexOf(right.key);
+
+      if (leftIndex === -1 && rightIndex === -1) return 0;
+      if (leftIndex === -1) return -1;
+      if (rightIndex === -1) return 1;
+
+      return leftIndex - rightIndex;
+    });
+  }, [data]);
+
   const activeSection = useMemo(() => {
     if (!data) {
       return null;
@@ -154,8 +178,8 @@ export function XmlReaderApp() {
       return null;
     }
 
-    return data.sections.find((section) => section.key === activeSectionKey) ?? data.sections[0] ?? null;
-  }, [activeSectionKey, data]);
+    return orderedSections.find((section) => section.key === activeSectionKey) ?? orderedSections[0] ?? null;
+  }, [activeSectionKey, data, orderedSections]);
 
   const filteredRecords = useMemo(() => {
     if (!activeSection) {
@@ -226,10 +250,7 @@ export function XmlReaderApp() {
             </div>
             <div className="privacy-pill">Local browser parsing only</div>
           </div>
-          <p>
-            This viewer opens one Genie <code>patient_summary</code> XML export at a time,
-            keeps the file in your browser, and presents the contents in a structured read-only layout.
-          </p>
+          <p>Local, read-only Genie XML viewer.</p>
         </section>
 
         <div className="grid">
@@ -253,10 +274,7 @@ export function XmlReaderApp() {
               >
                 <div>
                   <p className="label">Open XML File</p>
-                  <strong>Drag a Genie XML file here</strong>
-                  <p className="file-name">
-                    Or choose a file manually. Nothing is uploaded anywhere in v1.
-                  </p>
+                  <p className="file-name">Choose a file manually. Nothing uploads anywhere.</p>
                 </div>
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                   <button className="button" onClick={openPicker} type="button">
@@ -288,6 +306,41 @@ export function XmlReaderApp() {
               </div>
             </div>
 
+            {data ? (
+              <div className="sidebar-section">
+                <p className="label">Sections</p>
+                <div className="tab-list section-tab-list">
+                  <TabButton
+                    label="Patient"
+                    subtitle="Demographics and core record details"
+                    count={1}
+                    isActive={activeSectionKey === "patient"}
+                    onClick={() => setActiveSectionKey("patient")}
+                    compact
+                  />
+                  {orderedSections.map((section) => (
+                    <TabButton
+                      key={section.key}
+                      label={section.label}
+                      subtitle={section.description}
+                      count={section.records.length}
+                      isActive={activeSectionKey === section.key}
+                      onClick={() => setActiveSectionKey(section.key)}
+                      compact
+                    />
+                  ))}
+                  <TabButton
+                    label="Raw XML"
+                    subtitle="Fallback view of the original file"
+                    count={0}
+                    isActive={activeSectionKey === "raw"}
+                    onClick={() => setActiveSectionKey("raw")}
+                    compact
+                  />
+                </div>
+              </div>
+            ) : null}
+
             <div className="sidebar-section">
               <p className="label">Patient Directory ({patientIndex.length} patients)</p>
               <input
@@ -304,7 +357,7 @@ export function XmlReaderApp() {
                   {filteredPatients.length === 100 ? " (showing max 100)" : ""}
                 </p>
               )}
-              <div className="tab-list" style={{ maxHeight: "400px", overflowY: "auto", border: "1px solid var(--border)", borderRadius: "var(--radius-m)", padding: "4px" }}>
+              <div className="tab-list" style={{ maxHeight: "240px", overflowY: "auto", border: "1px solid var(--border)", borderRadius: "var(--radius-md)", padding: "4px" }}>
                 {filteredPatients.length === 0 && (
                   <div className="empty-state" style={{ padding: "12px", fontSize: "13px" }}>
                     {patientIndex.length === 0
@@ -372,38 +425,6 @@ export function XmlReaderApp() {
                 ) : null}
               </div>
             </div>
-
-            {data ? (
-              <div className="sidebar-section">
-                <p className="label">Sections</p>
-                <div className="tab-list">
-                  <TabButton
-                    label="Patient"
-                    subtitle="Demographics and core record details"
-                    count={1}
-                    isActive={activeSectionKey === "patient"}
-                    onClick={() => setActiveSectionKey("patient")}
-                  />
-                  {data.sections.map((section) => (
-                    <TabButton
-                      key={section.key}
-                      label={section.label}
-                      subtitle={section.description}
-                      count={section.records.length}
-                      isActive={activeSectionKey === section.key}
-                      onClick={() => setActiveSectionKey(section.key)}
-                    />
-                  ))}
-                  <TabButton
-                    label="Raw XML"
-                    subtitle="Fallback view of the original file"
-                    count={0}
-                    isActive={activeSectionKey === "raw"}
-                    onClick={() => setActiveSectionKey("raw")}
-                  />
-                </div>
-              </div>
-            ) : null}
           </aside>
 
           <section className="panel">
@@ -520,20 +541,22 @@ function TabButton({
   count,
   isActive,
   onClick,
+  compact = false,
 }: {
   label: string;
   subtitle: string;
   count: number;
   isActive: boolean;
   onClick: () => void;
+  compact?: boolean;
 }) {
   return (
-    <button className={`tab-button ${isActive ? "active" : ""}`} type="button" onClick={onClick}>
+    <button className={`tab-button ${isActive ? "active" : ""} ${compact ? "compact" : ""}`} type="button" onClick={onClick}>
       <div className="tab-title">
         <span>{label}</span>
         <span>{count > 0 ? count : ""}</span>
       </div>
-      <div className="tab-subtitle">{subtitle}</div>
+      {!compact ? <div className="tab-subtitle">{subtitle}</div> : null}
     </button>
   );
 }
