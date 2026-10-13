@@ -12,8 +12,14 @@ export function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  // Allow access to login page and public assets
-  if (pathname === "/login" || pathname.startsWith("/_next") || pathname.includes(".")) {
+  // Allow access to login page, public endoscopy form, and public assets
+  if (
+    pathname === "/login" ||
+    pathname.startsWith("/endoscopy") ||
+    pathname.startsWith("/public-endoscopy") ||
+    pathname.startsWith("/_next") ||
+    pathname.includes(".")
+  ) {
     return NextResponse.next();
   }
 

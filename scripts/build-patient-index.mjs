@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 // ─── Configuration ──────────────────────────────────────────────────────────
-const DEFAULT_XML_DIR = "/Users/cbasnayake/Documents/BACKUP CMG XML/2017 onwards";
+const DEFAULT_XML_DIR = "/Volumes/Chamara Bac/FINAL 09042026";
 const OUTPUT_FILE = path.resolve(process.cwd(), "output", "patient-index.json");
 
 // V8 memory fix: deep-copy sliced strings so the multi-MB parent can be GC'd
@@ -80,10 +80,17 @@ function main() {
       // Quick check: only read files that look like patient summaries
       const fd = fs.openSync(allFiles[i], "r");
       fs.readSync(fd, checkBuffer, 0, 16384, 0);
-      fs.closeSync(fd);
-      if (!checkBuffer.toString("utf8").includes("<patient_summary")) continue;
+      if (!checkBuffer.toString("utf8").includes("<patient_summary")) {
+        fs.closeSync(fd);
+        continue;
+      }
 
-      let xml = fs.readFileSync(allFiles[i], "utf8");
+      // Read only the first 512KB to avoid multi-MB file reading overhead
+      const largeBuffer = Buffer.alloc(1024 * 512);
+      const bytesRead = fs.readSync(fd, largeBuffer, 0, 1024 * 512, 0);
+      fs.closeSync(fd);
+      
+      let xml = largeBuffer.toString("utf8", 0, bytesRead);
       if (xml.indexOf("<patient_summary>") === -1) {
         xml = null;
         continue;

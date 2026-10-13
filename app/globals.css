@@ -342,6 +342,10 @@ select {
   border: 1px solid var(--border);
 }
 
+.record-card-results {
+  padding: 14px 16px;
+}
+
 .record-header {
   display: flex;
   justify-content: space-between;
@@ -366,6 +370,18 @@ select {
   color: var(--text);
   line-height: 1.6;
   max-width: 72ch;
+}
+
+.record-summary-results {
+  max-width: none;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid rgba(13, 92, 99, 0.1);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
 }
 
 .record-meta-row {
@@ -400,6 +416,11 @@ select {
   margin-top: 16px;
 }
 
+.field-grid-results {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
 .field {
   padding-top: 10px;
   border-top: 1px solid rgba(53, 42, 27, 0.08);
@@ -417,6 +438,20 @@ select {
   white-space: pre-wrap;
   word-break: break-word;
   line-height: 1.55;
+}
+
+.result-spotlight {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(13, 92, 99, 0.12);
+  background: linear-gradient(180deg, rgba(237, 246, 247, 0.7), rgba(255, 255, 255, 0.9));
+}
+
+.result-spotlight-value {
+  font-size: 0.97rem;
+  line-height: 1.55;
+  max-width: none;
 }
 
 .empty-state {

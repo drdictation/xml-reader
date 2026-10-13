@@ -10,12 +10,14 @@
     "export-scopes": "node scripts/export-scope-appointments.mjs",
     "build-index": "node scripts/build-patient-index.mjs",
     "build-letters": "node scripts/build-letters-index.mjs",
-    "export-database": "node scripts/export-patient-database.mjs"
+    "export-database": "node scripts/export-patient-database.mjs",
+    "recalls": "node scripts/export-recalls.mjs"
   },
   "dependencies": {
     "dotenv": "^17.4.1",
     "googleapis": "^171.4.0",
     "next": "^16.2.0",
+    "pdf-lib": "^1.17.1",
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "xlsx-js-style": "^1.2.0"

@@ -581,6 +581,7 @@ function RecordCard({
 }) {
   const [isOpen, setIsOpen] = useState(record.isFuture === true);
   const isFutureAppt = record.isFuture === true;
+  const isDownloadedResult = sectionKey === "downloadedresult_list";
   const primaryFieldOrder = SECTION_PRIMARY_FIELDS[sectionKey] ?? [];
   const allEntries = Object.entries(record.fields)
     .filter(([key, value]) => value && !isBinaryLikeField(key, value, record.preview))
@@ -603,9 +604,21 @@ function RecordCard({
   const narrativeEntry =
     primaryEntries.find(([key]) => isNarrativeField(key)) ??
     allEntries.find(([key]) => isNarrativeField(key));
+  const resultEntry =
+    isDownloadedResult
+      ? primaryEntries.find(([key]) => key === "result") ?? allEntries.find(([key]) => key === "result")
+      : undefined;
+  const primaryGridEntries =
+    isDownloadedResult && resultEntry
+      ? primaryEntries.filter(([key]) => key !== resultEntry[0])
+      : primaryEntries;
+  const summaryText = narrativeEntry ? formatFieldValue(narrativeEntry[0], narrativeEntry[1]) : null;
 
   return (
-    <article className="record-card" style={isFutureAppt ? { borderLeft: "3px solid #2E7D32", background: "#F1FDF2" } : undefined}>
+    <article
+      className={`record-card ${isDownloadedResult ? "record-card-results" : ""}`}
+      style={isFutureAppt ? { borderLeft: "3px solid #2E7D32", background: "#F1FDF2" } : undefined}
+    >
       <header className="record-header">
         <div>
           {isFutureAppt ? (
@@ -615,8 +628,10 @@ function RecordCard({
           ) : null}
           <h3 className="record-title">{record.title}</h3>
           {record.subtitle ? <p className="record-subtitle">{record.subtitle}</p> : null}
-          {narrativeEntry ? (
-            <p className="record-summary">{truncateText(formatFieldValue(narrativeEntry[0], narrativeEntry[1]), 220)}</p>
+          {summaryText ? (
+            <p className={`record-summary ${isDownloadedResult ? "record-summary-results" : ""}`}>
+              {isDownloadedResult ? truncateText(summaryText, 420) : truncateText(summaryText, 220)}
+            </p>
           ) : null}
           {compactMeta.length > 0 ? (
             <div className="record-meta-row">
@@ -645,9 +660,16 @@ function RecordCard({
 
       {isOpen ? (
         <>
-          {primaryEntries.length > 0 ? (
-            <div className="field-grid">
-              {primaryEntries.map(([key, value]) => (
+          {isDownloadedResult && resultEntry ? (
+            <div className="result-spotlight">
+              <div className="field-name">{toLabel(resultEntry[0])}</div>
+              <div className="field-value result-spotlight-value">{formatFieldValue(resultEntry[0], resultEntry[1])}</div>
+            </div>
+          ) : null}
+
+          {primaryGridEntries.length > 0 ? (
+            <div className={`field-grid ${isDownloadedResult ? "field-grid-results" : ""}`}>
+              {primaryGridEntries.map(([key, value]) => (
                 <div className="field" key={key}>
                   <div className="field-name">{toLabel(key)}</div>
                   <div className="field-value">{formatFieldValue(key, value)}</div>

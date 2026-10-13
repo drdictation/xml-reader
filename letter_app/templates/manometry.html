@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manometry Referral | Letter Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div>
+                <h1>Manometry Referral <span>DOCX Form Fill</span></h1>
+                <nav class="mode-nav" aria-label="App sections">
+                    <a href="/" class="mode-link">Letters</a>
+                    <a href="/pathology" class="mode-link">Pathology</a>
+                    <a href="/radiology" class="mode-link">Radiology</a>
+                    <a href="/ius" class="mode-link">IUS</a>
+                    <a href="/manometry" class="mode-link is-active">Manometry</a>
+                    <a href="/public-iron" class="mode-link">Public Iron</a>
+                    <a href="/private-iron" class="mode-link">Private Iron</a>
+                    <a href="/endoscopy" class="mode-link">Endoscopy</a>
+                </nav>
+            </div>
+            <div id="loading-indicator" class="loading hidden">Loading Database...</div>
+        </header>
+
+        <main class="main-content">
+            <div class="left-panel">
+                <div class="card">
+                    <h2>Patient & Referrer</h2>
+                    <p class="subtitle">Select the patient and referrer, then adjust any fields before generating the filled Word form.</p>
+
+                    <div class="form-group">
+                        <label for="manometry-patient-select">Patient Lookup</label>
+                        <select id="manometry-patient-select" placeholder="Search patient by name..."></select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="manometry-referrer-select">Referring Doctor</label>
+                        <select id="manometry-referrer-select" placeholder="Search doctor by name..."></select>
+                    </div>
+
+                    <div class="ocr-import-section" id="ocr-section">
+                        <div class="ocr-title">Autofill from Screenshot</div>
+                        <p class="ocr-subtitle">Capture demographics from screen or drag/paste it below.</p>
+                        <button type="button" class="ocr-btn" id="ocr-capture-btn">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                            Capture Selection
+                        </button>
+                        <div class="ocr-zone" id="ocr-dropzone">
+                            Click to upload, paste (Cmd+V), or drag screenshot here
+                        </div>
+                        <input type="file" id="ocr-file-input" style="display: none;" accept="image/*">
+                        <div class="ocr-status hidden" id="ocr-status-text"></div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="manometry-date">Date of Referral</label>
+                            <input id="manometry-date" class="text-input" type="date">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="manometry-name">Patient Name</label>
+                            <input id="manometry-name" class="text-input" type="text" placeholder="Patient full name">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="manometry-dob">Date of Birth</label>
+                            <input id="manometry-dob" class="text-input" type="date">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="manometry-urn">URN</label>
+                            <input id="manometry-urn" class="text-input" type="text" placeholder="Optional">
+                        </div>
+
+                        <div class="form-group field-span">
+                            <label for="manometry-address">Address</label>
+                            <textarea id="manometry-address" class="form-textarea compact-textarea" placeholder="Street, suburb, postcode"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="manometry-phone">Phone</label>
+                            <input id="manometry-phone" class="text-input" type="text" placeholder="Optional">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="manometry-email">Email</label>
+                            <input id="manometry-email" class="text-input" type="email" placeholder="Optional">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-top: 20px;">
+                    <h2>Referrer Form Fields</h2>
+                    <div class="form-grid">
+                        <div class="form-group field-span">
+                            <label for="referrer-name">Name</label>
+                            <input id="referrer-name" class="text-input" type="text" placeholder="Referring doctor name">
+                        </div>
+
+                        <div class="form-group field-span">
+                            <label for="referrer-address">Address / Clinic</label>
+                            <textarea id="referrer-address" class="form-textarea compact-textarea" placeholder="Clinic or address"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="referrer-phone">Phone</label>
+                            <input id="referrer-phone" class="text-input" type="text" placeholder="Optional">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="referrer-department">Department</label>
+                            <input id="referrer-department" class="text-input" type="text" value="Gastroenterology">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="referrer-provider-number">Provider Number</label>
+                            <input id="referrer-provider-number" class="text-input" type="text" placeholder="Optional">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="referrer-fax">Fax</label>
+                            <input id="referrer-fax" class="text-input" type="text" placeholder="Optional">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <div class="card editor-card">
+                    <h2>Test Required</h2>
+                    <div class="checkbox-grid">
+                        <label class="check-option"><input id="test-oesophageal-manometry" type="checkbox"> Oesophageal Manometry</label>
+                        <label class="check-option"><input id="test-24-hour-ph-study" type="checkbox"> 24 Hour pH Study (with manometry)</label>
+                        <label class="check-option"><input id="test-24-ph-impedance" type="checkbox"> 24 pH Impedance</label>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 18px;">
+                        <label for="manometry-ppi">If pH study selected</label>
+                        <select id="manometry-ppi" class="text-input">
+                            <option value="">Leave unticked</option>
+                            <option value="on">On PPI</option>
+                            <option value="off">Off PPI</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="card editor-card" style="margin-top: 20px;">
+                    <h2>Indications</h2>
+                    <div class="checkbox-grid">
+                        <label class="check-option"><input id="ind-dysphagia" type="checkbox"> Dysphagia</label>
+                        <label class="check-option"><input id="ind-poem" type="checkbox"> Consideration for POEM</label>
+                        <label class="check-option"><input id="ind-spasm" type="checkbox"> Hx of Oesophageal Spasm</label>
+                        <label class="check-option"><input id="ind-heartburn" type="checkbox"> Heart burn</label>
+                        <label class="check-option"><input id="ind-erosive" type="checkbox"> Erosive Oesophagitis despite PPI</label>
+                        <label class="check-option"><input id="ind-achalasia" type="checkbox"> Hx of Achalasia</label>
+                        <label class="check-option"><input id="ind-regurgitation" type="checkbox"> Regurgitation</label>
+                        <label class="check-option"><input id="ind-fundoplication" type="checkbox"> Consideration for fundoplication</label>
+                        <label class="check-option"><input id="ind-motility" type="checkbox"> Hx of “Motility Disorder”</label>
+                        <label class="check-option"><input id="ind-chest-pain" type="checkbox"> Atypical Chest pain</label>
+                        <label class="check-option"><input id="ind-hellers" type="checkbox"> Consideration for Hellers Myotomy</label>
+                        <label class="check-option"><input id="ind-post-fundo" type="checkbox"> Post fundoplication</label>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 18px;">
+                        <label for="other-indication">Other</label>
+                        <input id="other-indication" class="text-input" type="text" placeholder="Optional free-text indication">
+                    </div>
+                </div>
+
+                <div class="card editor-card" style="margin-top: 20px; flex: 0 0 auto;">
+                    <h2>Clinical Details</h2>
+                    <textarea id="clinical-details" class="form-textarea" placeholder="Symptoms, duration, working diagnosis, previous treatments, and other relevant details..."></textarea>
+
+                    <div class="form-grid" style="margin-top: 16px;">
+                        <div class="form-group">
+                            <label for="last-gastroscopy">Last Gastroscopy</label>
+                            <input id="last-gastroscopy" class="text-input" type="text" placeholder="Date or timing">
+                        </div>
+
+                        <div class="form-group field-span">
+                            <label for="gastroscopy-results">Gastroscopy Results</label>
+                            <textarea id="gastroscopy-results" class="form-textarea compact-textarea" placeholder="Findings"></textarea>
+                        </div>
+
+                        <div class="form-group field-span">
+                            <label for="surgery-details">Prior Gastric / Oesophageal Surgery</label>
+                            <textarea id="surgery-details" class="form-textarea compact-textarea" placeholder="Procedure details or nil"></textarea>
+                        </div>
+
+                        <div class="form-group field-span">
+                            <label for="medications">Current Medications</label>
+                            <textarea id="medications" class="form-textarea compact-textarea" placeholder="Medication name, dose, frequency, and since when"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="app-footer pathology-footer">
+            <div id="manometry-status" class="form-status hidden"></div>
+            <button id="generate-manometry-btn" class="btn-primary" disabled>Generate Manometry DOCX</button>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+    <script src="/static/js/manometry.js"></script>
+</body>
+</html>

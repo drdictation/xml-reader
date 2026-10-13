@@ -152,8 +152,159 @@ async function generateIus() {
     }
 }
 
+function showOcrStatus(message, type) {
+    const statusText = document.getElementById("ocr-status-text");
+    statusText.className = "ocr-status";
+    statusText.classList.remove("hidden");
+    statusText.innerText = message;
+    if (type === "loading") {
+        statusText.classList.add("is-loading");
+    } else if (type === "success") {
+        statusText.classList.add("is-success");
+    } else if (type === "error") {
+        statusText.classList.add("is-error");
+    }
+}
+
+function clearOcrStatus() {
+    const statusText = document.getElementById("ocr-status-text");
+    statusText.className = "ocr-status hidden";
+    statusText.innerText = "";
+}
+
+function handleOcrResponse(data) {
+    if (data.error) {
+        showOcrStatus(`Error: ${data.error} ${data.details ? `(${data.details.join(', ')})` : ''}`, "error");
+        return;
+    }
+    
+    if (data.name) setIusFieldValue("ius-name", data.name);
+    if (data.dob) setIusFieldValue("ius-dob", data.dob);
+    if (data.urn) setIusFieldValue("ius-urn", data.urn);
+    if (data.medicare) setIusFieldValue("ius-medicare", data.medicare);
+    if (data.phone) setIusFieldValue("ius-phone", data.phone);
+    if (data.email) setIusFieldValue("ius-email", data.email);
+    if (data.address) setIusFieldValue("ius-address", data.address);
+    
+    showOcrStatus(`Imported patient details successfully via ${data.provider}!`, "success");
+}
+
+async function startOcrCapture() {
+    showOcrStatus("Please drag a box over demographics on your screen...", "loading");
+    try {
+        const res = await fetch("/api/ocr-capture");
+        const data = await res.json();
+        handleOcrResponse(data);
+    } catch (err) {
+        showOcrStatus(`Capture failed: ${err.message || err}`, "error");
+    }
+}
+
+async function uploadOcrImage(file) {
+    showOcrStatus("Processing image and extracting text...", "loading");
+    const formData = new FormData();
+    formData.append("image", file);
+    
+    try {
+        const res = await fetch("/api/ocr-upload", {
+            method: "POST",
+            body: formData
+        });
+        const data = await res.json();
+        handleOcrResponse(data);
+    } catch (err) {
+        showOcrStatus(`Upload failed: ${err.message || err}`, "error");
+    }
+}
+
+async function uploadPastedText(text) {
+    showOcrStatus("Processing referral text with AI...", "loading");
+    try {
+        const res = await fetch("/api/ocr-text", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: text })
+        });
+        const data = await res.json();
+        handleOcrResponse(data);
+    } catch (err) {
+        showOcrStatus(`Extraction failed: ${err.message || err}`, "error");
+    }
+}
+
+function initOcrAutofill() {
+    const captureBtn = document.getElementById("ocr-capture-btn");
+    const dropzone = document.getElementById("ocr-dropzone");
+    const fileInput = document.getElementById("ocr-file-input");
+    
+    if (captureBtn) {
+        captureBtn.addEventListener("click", startOcrCapture);
+    }
+    
+    if (dropzone && fileInput) {
+        dropzone.addEventListener("click", () => fileInput.click());
+        
+        fileInput.addEventListener("change", (e) => {
+            if (e.target.files && e.target.files[0]) {
+                uploadOcrImage(e.target.files[0]);
+            }
+        });
+        
+        ["dragenter", "dragover"].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.add("dragover");
+            }, false);
+        });
+        
+        ["dragleave", "drop"].forEach(eventName => {
+            dropzone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.remove("dragover");
+            }, false);
+        });
+        
+        dropzone.addEventListener("drop", (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files && files[0]) {
+                uploadOcrImage(files[0]);
+            } else {
+                const text = dt.getData("text");
+                if (text && text.trim().length > 10) {
+                    uploadPastedText(text.trim());
+                }
+            }
+        });
+    }
+    
+    document.addEventListener("paste", (e) => {
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf("image") === 0) {
+                const file = items[i].getAsFile();
+                uploadOcrImage(file);
+                return;
+            }
+        }
+
+        const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : "";
+        if (activeTag === "input" || activeTag === "textarea") {
+            return;
+        }
+
+        const pastedText = (e.clipboardData || e.originalEvent.clipboardData).getData("text");
+        if (pastedText && pastedText.trim().length > 10) {
+            uploadPastedText(pastedText.trim());
+        }
+    });
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
     await loadIusDatabase();
+    initOcrAutofill();
     const button = document.getElementById("generate-ius-btn");
     button.disabled = false;
     button.addEventListener("click", generateIus);

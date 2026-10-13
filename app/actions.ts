@@ -53,6 +53,16 @@ export async function readBackupFile(fileId: string) {
     if (!fileId) {
       throw new Error("No File ID provided.");
     }
+    
+    // Check if it's a local path
+    if (fileId.startsWith("/") || fileId.includes(":\\")) {
+      const content = await fs.readFile(fileId, "utf8");
+      return {
+        name: "Patient Record",
+        content,
+      };
+    }
+    
     // Individual XML files are fetched from Google Drive on demand
     const content = await getFileContent(fileId);
     return {
@@ -60,7 +70,7 @@ export async function readBackupFile(fileId: string) {
       content,
     };
   } catch (error) {
-    console.error("Error reading file from Drive:", error);
+    console.error("Error reading file:", error);
     throw error;
   }
 }

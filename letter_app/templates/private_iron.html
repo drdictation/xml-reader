@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Private Iron Infusion | Letter Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div>
+                <h1>Private Iron Infusion Referral <span>Sticker Fill</span></h1>
+                <nav class="mode-nav" aria-label="App sections">
+                    <a href="/" class="mode-link">Letters</a>
+                    <a href="/pathology" class="mode-link">Pathology</a>
+                    <a href="/radiology" class="mode-link">Radiology</a>
+                    <a href="/ius" class="mode-link">IUS</a>
+                    <a href="/manometry" class="mode-link">Manometry</a>
+                    <a href="/public-iron" class="mode-link">Public Iron</a>
+                    <a href="/private-iron" class="mode-link is-active">Private Iron</a>
+                    <a href="/endoscopy" class="mode-link">Endoscopy</a>
+                </nav>
+            </div>
+            <div id="loading-indicator" class="loading hidden">Loading Database...</div>
+        </header>
+
+        <main class="main-content">
+            <div class="left-panel" style="max-width: 650px; margin: 0 auto; width: 100%;">
+                <div class="card">
+                    <h2>Patient Demographics</h2>
+                    <p class="subtitle">This will overlay patient sticker blocks on Page 1 (middle-top) and Page 2 (top right) of the Private Iron Infusion form.</p>
+
+                    <div class="form-group">
+                        <label for="iron-patient-select">Patient Lookup</label>
+                        <select id="iron-patient-select" placeholder="Search patient by name..."></select>
+                    </div>
+
+                    <div class="ocr-import-section" id="ocr-section">
+                        <div class="ocr-title">Autofill from Screenshot</div>
+                        <p class="ocr-subtitle">Capture demographics from screen or drag/paste it below.</p>
+                        <button type="button" class="ocr-btn" id="ocr-capture-btn">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle;"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                            Capture Selection
+                        </button>
+                        <div class="ocr-zone" id="ocr-dropzone">
+                            Click to upload, paste (Cmd+V), or drag screenshot here
+                        </div>
+                        <input type="file" id="ocr-file-input" style="display: none;" accept="image/*">
+                        <div class="ocr-status hidden" id="ocr-status-text"></div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="iron-date">Date</label>
+                            <input id="iron-date" class="text-input" type="date">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="iron-urn">URN / Patient ID</label>
+                            <input id="iron-urn" class="text-input" type="text" placeholder="Optional">
+                        </div>
+
+                        <div class="form-group field-span">
+                            <label for="iron-name">Name</label>
+                            <input id="iron-name" class="text-input" type="text" placeholder="Patient full name">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="iron-dob">Date of Birth</label>
+                            <input id="iron-dob" class="text-input" type="date">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="iron-medicare">Medicare No.</label>
+                            <input id="iron-medicare" class="text-input" type="text" placeholder="Optional">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="iron-private-health">Private Health Ins.</label>
+                            <input id="iron-private-health" class="text-input" type="text" placeholder="Optional">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="iron-phone">Phone</label>
+                            <input id="iron-phone" class="text-input" type="text" placeholder="Optional">
+                        </div>
+
+                        <div class="form-group field-span">
+                            <label for="iron-email">Email</label>
+                            <input id="iron-email" class="text-input" type="email" placeholder="Optional">
+                        </div>
+
+                        <div class="form-group field-span">
+                            <label for="iron-address">Address</label>
+                            <textarea id="iron-address" class="form-textarea compact-textarea" placeholder="Street, suburb, postcode"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="app-footer pathology-footer" style="max-width: 650px; margin: 0 auto; width: 100%;">
+            <div id="iron-status" class="form-status hidden"></div>
+            <button id="generate-iron-btn" class="btn-primary" disabled>Generate & Open Outlook</button>
+        </footer>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+    <script src="/static/js/private_iron.js"></script>
+</body>
+</html>

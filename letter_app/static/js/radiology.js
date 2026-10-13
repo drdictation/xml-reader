@@ -138,8 +138,212 @@ async function generateRadiology() {
     }
 }
 
+function showOcrStatus(message, type) {
+    const statusText = document.getElementById("ocr-status-text");
+    if (!statusText) return;
+    statusText.className = "ocr-status";
+    statusText.classList.remove("hidden");
+    statusText.innerText = message;
+    if (type === "loading") {
+        statusText.classList.add("is-loading");
+    } else if (type === "success") {
+        statusText.classList.add("is-success");
+    } else if (type === "error") {
+        statusText.classList.add("is-error");
+    }
+}
+
+function clearOcrStatus() {
+    const statusText = document.getElementById("ocr-status-text");
+    if (!statusText) return;
+    statusText.className = "ocr-status hidden";
+    statusText.innerText = "";
+}
+
+function handleOcrResponse(data) {
+    if (data.error) {
+        showOcrStatus(`Error: ${data.error} ${data.details ? `(${data.details.join(', ')})` : ''}`, "error");
+        return;
+    }
+
+    if (data.name) setFieldValue("rad-name", data.name);
+    if (data.dob) setFieldValue("rad-dob", data.dob);
+    if (data.medicare) setFieldValue("rad-medicare", data.medicare);
+    if (data.phone) setFieldValue("rad-phone", data.phone);
+    if (data.address) setFieldValue("rad-address", data.address);
+    if (data.request_for) {
+        const reqEl = document.getElementById("rad-request-for");
+        if (reqEl && !reqEl.value.trim()) {
+            reqEl.value = data.request_for;
+        }
+    }
+    if (data.clinical_details) {
+        const clinEl = document.getElementById("rad-clinical-details");
+        if (clinEl && !clinEl.value.trim()) {
+            clinEl.value = data.clinical_details;
+        }
+    }
+
+    const patientName = (data.name || "").trim();
+    if (patientName) {
+        const patient = {
+            name: patientName,
+            dob: data.dob || "",
+            medicare_number: data.medicare || "",
+            medicare: data.medicare || "",
+            phone: data.phone || "",
+            home_phone: data.phone || "",
+            address: data.address || "",
+            full_address: data.address || "",
+        };
+        const existingIndex = radiologyPatientsData.findIndex(
+            (item) => item.name && item.name.toLowerCase() === patientName.toLowerCase()
+        );
+        if (existingIndex >= 0) {
+            radiologyPatientsData[existingIndex] = { ...radiologyPatientsData[existingIndex], ...patient };
+        } else {
+            radiologyPatientsData.push(patient);
+        }
+
+        if (radiologyPatientSelectInstance) {
+            const label = `${patientName}${patient.dob ? ` (DOB: ${patient.dob})` : ""}`;
+            const option = { value: patientName, text: label };
+            if (radiologyPatientSelectInstance.options[patientName]) {
+                radiologyPatientSelectInstance.updateOption(patientName, option);
+            } else {
+                radiologyPatientSelectInstance.addOption(option);
+            }
+            radiologyPatientSelectInstance.setValue(patientName, true);
+        }
+    }
+
+    showOcrStatus(`Imported patient details successfully via ${data.provider || "AI"}!`, "success");
+}
+
+async function startOcrCapture() {
+    showOcrStatus("Please drag a box over demographics on your screen...", "loading");
+    try {
+        const res = await fetch("/api/ocr-capture");
+        const data = await res.json();
+        handleOcrResponse(data);
+    } catch (err) {
+        showOcrStatus(`Capture failed: ${err.message || err}`, "error");
+    }
+}
+
+async function uploadOcrImage(file) {
+    showOcrStatus("Processing image and extracting text...", "loading");
+    const formData = new FormData();
+    formData.append("image", file);
+
+    try {
+        const res = await fetch("/api/ocr-upload", {
+            method: "POST",
+            body: formData,
+        });
+        const data = await res.json();
+        handleOcrResponse(data);
+    } catch (err) {
+        showOcrStatus(`Upload failed: ${err.message || err}`, "error");
+    }
+}
+
+async function uploadPastedText(text) {
+    showOcrStatus("Processing referral text with AI...", "loading");
+    try {
+        const res = await fetch("/api/ocr-text", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ text: text }),
+        });
+        const data = await res.json();
+        handleOcrResponse(data);
+    } catch (err) {
+        showOcrStatus(`Extraction failed: ${err.message || err}`, "error");
+    }
+}
+
+function initOcrAutofill() {
+    const captureBtn = document.getElementById("ocr-capture-btn");
+    const dropzone = document.getElementById("ocr-dropzone");
+    const fileInput = document.getElementById("ocr-file-input");
+
+    if (captureBtn) {
+        captureBtn.addEventListener("click", startOcrCapture);
+    }
+
+    if (dropzone && fileInput) {
+        dropzone.addEventListener("click", () => fileInput.click());
+
+        fileInput.addEventListener("change", (e) => {
+            if (e.target.files && e.target.files[0]) {
+                uploadOcrImage(e.target.files[0]);
+            }
+        });
+
+        ["dragenter", "dragover"].forEach((eventName) => {
+            dropzone.addEventListener(
+                eventName,
+                (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzone.classList.add("dragover");
+                },
+                false
+            );
+        });
+
+        ["dragleave", "drop"].forEach((eventName) => {
+            dropzone.addEventListener(
+                eventName,
+                (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropzone.classList.remove("dragover");
+                },
+                false
+            );
+        });
+
+        dropzone.addEventListener("drop", (e) => {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if (files && files[0]) {
+                uploadOcrImage(files[0]);
+            } else {
+                const text = dt.getData("text");
+                if (text && text.trim().length > 10) {
+                    uploadPastedText(text.trim());
+                }
+            }
+        });
+    }
+
+    document.addEventListener("paste", (e) => {
+        const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf("image") === 0) {
+                const file = items[i].getAsFile();
+                uploadOcrImage(file);
+                return;
+            }
+        }
+
+        const activeTag = document.activeElement ? document.activeElement.tagName.toLowerCase() : "";
+        if (activeTag === "input" || activeTag === "textarea") {
+            return;
+        }
+
+        const pastedText = (e.clipboardData || e.originalEvent.clipboardData).getData("text");
+        if (pastedText && pastedText.trim().length > 10) {
+            uploadPastedText(pastedText.trim());
+        }
+    });
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
     await loadRadiologyDatabase();
+    initOcrAutofill();
     const button = document.getElementById("generate-radiology-btn");
     button.disabled = false;
     button.addEventListener("click", generateRadiology);
