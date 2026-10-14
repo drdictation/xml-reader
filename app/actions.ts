@@ -56,11 +56,32 @@ export async function readBackupFile(fileId: string) {
     
     // Check if it's a local path
     if (fileId.startsWith("/") || fileId.includes(":\\")) {
-      const content = await fs.readFile(fileId, "utf8");
-      return {
-        name: "Patient Record",
-        content,
-      };
+      try {
+        const content = await fs.readFile(fileId, "utf8");
+        return {
+          name: "Patient Record",
+          content,
+        };
+      } catch {
+        // If local file is not accessible (e.g. deployed on Vercel), fall back to Google Drive by filename
+        const fileName = path.basename(fileId);
+        const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
+        const { getDriveClient } = await import("../lib/google-drive");
+        const drive = await getDriveClient();
+        const q = folderId
+          ? `'${folderId}' in parents and name = '${fileName}' and trashed = false`
+          : `name = '${fileName}' and trashed = false`;
+        const listRes = await drive.files.list({ q, fields: "files(id, name)" });
+        const match = listRes.data.files?.[0];
+        if (match?.id) {
+          const content = await getFileContent(match.id);
+          return {
+            name: "Patient Record",
+            content,
+          };
+        }
+        throw new Error(`Patient record file not found locally or on Google Drive: ${fileName}`);
+      }
     }
     
     // Individual XML files are fetched from Google Drive on demand
